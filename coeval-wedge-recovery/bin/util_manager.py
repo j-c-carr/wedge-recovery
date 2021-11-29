@@ -7,7 +7,7 @@ import os
 import typing
 from typing import Optional, List
 import numpy as np
-from sklearn.preprocessing import normalize
+
 
 def init_logger(f: str, 
                 name: str) -> logging.Logger:
@@ -23,6 +23,7 @@ def init_logger(f: str,
 
 logger = init_logger("test.log", __name__)
 
+
 class UtilManager:
 
     """Manager class for miscellaneous I/O operations"""
@@ -31,61 +32,50 @@ class UtilManager:
     def __init__(self):
         self.dset_attrs = {}
 
-        
-    def load_data_from_h5(self,
-                          filename: str,
-                          cube_shape: tuple,
-                          start: int = 0,
-                          end: Optional[int] = None) -> List[np.ndarray]:
-        """
-        Loads coeval boxes from h5py file. Assumes h5py file has 4 datasets,
-            'brightness_boxes' --> ground truth brightness temp boxes 
-            'wedge_filtered_brightness_temp_boxes' --> brightness temp boxes minus wedge
-            'ionized_boxes' --> coeval_boxes minus wedge
-            'redshifts' --> redshift of each coeval box
-        """
 
-        with h5py.File(filename, "r") as hf:
+    def load_data_from_h5(self, filepath):
+        """Loads all data from h5 file, returns nothing. (Typically used just
+        to observe the values in a dataset)"""
+        self.filepath = filepath
 
-            # Check we have the required datasets
-            datasets = list(hf.keys())
-            logger.info(f"Datasets: {datasets}")
-            assert "wedge_filtered_brightness_temp_boxes" in datasets and \
-                   "brightness_temp_boxes" in datasets and \
-                   "ionized_boxes" in datasets and \
-                   "redshifts" in datasets, \
-                   "Failed to extract datasets from h5py file."
+        with h5py.File(filepath, "r") as hf:
 
-            _X = np.array(hf["wedge_filtered_brightness_temp_boxes"][:], 
-                          dtype=np.float32)
-            _Y = np.array(hf["brightness_temp_boxes"][:], dtype=np.float32)
-            redshifts = np.array(hf["redshifts"][:], dtype=np.float32)
-            xh = np.array(hf["ionized_boxes"][:], dtype=np.float32)
+            for k in hf.keys():
+
+                # AstroParams are stored in h5py groups
+                if isinstance(hf[k], h5py.Group):
+                    logger.debug(f"{k} is a group")
+                    self.metadata[k] = {}
+                    for k2 in hf[k].keys():
+                        v = np.array(hf[k][k2], dtype=np.float32)
+                        logger.debug(f"\t{k2} created in metadata.")
+                        self.metadata[k][k2] = v
+
+                # Lightcones are stored as h5py datasets
+                if isinstance(hf[k], h5py.Dataset):
+                    v = np.array(hf[k][:], dtype=np.float32)
+                    assert np.isnan(np.sum(v)) == False
+                    self.data[k] = v
+            self.data["redshifts"].reshape(-1) 
 
             # Load metadata from h5 file
             for k, v in hf.attrs.items():
-                if k != "redshifts":
-                    self.dset_attrs[k] = v
+                self.dset_attrs[k] = v
 
-
-        # Assert no nan values
-        assert np.isnan(np.sum(_X)) == False
-        assert np.isnan(np.sum(_Y)) == False
-        assert np.isnan(np.sum(redshifts)) == False
-        assert np.isnan(np.sum(xh)) == False
-
-        assert _X.shape[-3:] == cube_shape, \
-                f"expected {cube_shape}, got {_X.shape[-3:]}"
-        assert _Y.shape[-3:] == cube_shape
-
-        X = np.reshape(_X, (-1, *cube_shape))
-        Y = np.reshape(_Y, (-1, *cube_shape))
-        self.xH_boxes = xh
-
-        assert redshifts.shape[0] == _X.shape[0], \
-                f"expected {redshifts.shape[0]}, got {_X.shape[0]}"
-
-        return X[start:end], Y[start:end], redshifts[start:end]
+        # Print success message
+        print("\n----------\n")
+        print(f"data loaded from {self.filepath}")
+        print("Contents:")
+        for k, v in self.data.items():
+            print("\t{}, shape: {}".format(k, v.shape))
+        print("\nMetadata:")
+        for k in self.metadata.keys():
+            print(f"\t{k}")
+        print("\n----------\n")
+        print("\nDataset Attributes:")
+        for k in self.dset_attrs.keys():
+            print(f"\t{k}")
+        print("\n----------\n")
 
 
     def shuffle_data(self, 

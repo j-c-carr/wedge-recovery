@@ -25,6 +25,7 @@ tf.debugging.set_log_device_placement(False)
 # Prints all logging info to std.err
 logging.getLogger().addHandler(logging.StreamHandler())
 
+
 def init_logger(f: str, 
                 name: str) -> logging.Logger:
     """Instantiates logger :name: and sets logfile to :f:"""
@@ -36,6 +37,7 @@ def init_logger(f: str,
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     return logger
+
 
 def make_parser() -> argparse.ArgumentParser:
     """Makes command line argument parser. Returns ArgumentParser"""
@@ -56,6 +58,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--sample_data_only", action="store_true", help="plot data sample and then exit")
     return parser.parse_args()
 
+
 def read_params_from_yml_file(filename: str) -> dict:
     """ 
     Reads variables from yml filename. 
@@ -63,6 +66,7 @@ def read_params_from_yml_file(filename: str) -> dict:
     with open(filename) as file:
         params = yaml.load(file, Loader=yaml.FullLoader)
         return params
+
 
 def make_out_dir():
     OUT_DIR = args.root_dir + "/out/" + args.datetime + args.title + "/"
@@ -97,8 +101,8 @@ if __name__=="__main__":
 
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
-    _X, _Y, _redshifts = UM.load_data_from_h5(args.data_file, cube_shape=CUBE_SHAPE)
-    #X, Y, redshifts = UM.shuffle_data(_X, _Y, _redshifts)
+    UM.load_data_from_h5(args.data_file)
+    exit()
 
     # Binarize ground truth, passed as labels to the model.
     B = (Y > 0).astype(np.float32)
@@ -166,4 +170,14 @@ if __name__=="__main__":
                         "redshifts": redshifts[MM.X_train.shape[0]:]},
                         stats=SM.results)
 
+            logger.info("Done")
+
+
+            filename = f"scratch/results/{args.title}_validation.h5"
+            logger.info(f"Saving predictions to {filename}")
+
+            UM.save_results(filename,
+                            {"predicted_lightcones": MM.preds},
+                            start=MM.X_train.shape[0],
+                            end=MM.X_train.shape[0]+MM.preds.shape[0])
             logger.info("Done")

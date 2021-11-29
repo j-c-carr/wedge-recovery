@@ -91,20 +91,18 @@ if __name__=="__main__":
     np.random.seed(0)
     tf.random.set_seed(0)
 
-    UM = UtilManager()
-
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
-    #X, Y, redshifts = \
-    #        UM.load_data_from_h5(args.data_file, cube_shape=LIGHTCONE_SHAPE)
-    UM.load_all_data_from_h5(args.data_file)
+    UM = UtilManager()
+    UM.load_data_from_h5(args.data_file)
+
     X = UM.data["wedge_filtered_lightcones"]
     Y = UM.data["lightcones"]
     redshifts = UM.data["redshifts"]
-
     B = UM.binarize_ground_truth(Y)
-    logger.info("Done.")
 
+    logger.info("Done.")
+    exit()
     LPM = LightconePlotManager(redshifts, LIGHTCONE_SHAPE,
                                LIGHTCONE_DIMENSIONS)
 
@@ -116,12 +114,9 @@ if __name__=="__main__":
                                num_samples=10)
         exit()
 
+
     MM = ModelManager(X, B, f"{args.datetime}_{args.title}", args.log_dir,
             model_params, LIGHTCONE_SHAPE)
-    # Separate metadata for training and validation for easy access
-    print("X valid shape: ", MM.X_valid.shape)
-    print("X valid shape[0]: ", MM.X_valid.shape[0])
-    UM.split_train_and_val_metadata(MM.X_valid.shape[0])
 
     # Loads multiple GPUs if available
     strategy = tf.distribute.experimental.CentralStorageStrategy()
@@ -133,7 +128,8 @@ if __name__=="__main__":
 
         # Must compile model inside the scope block
         if args.old_model_loc is not None:
-            MM.initialize_model(load_saved_weights=True, old_model=args.old_model_loc)
+            MM.initialize_model(load_saved_weights=True, 
+                                old_model=args.old_model_loc)
         else:
             MM.initialize_model()
  
@@ -149,10 +145,6 @@ if __name__=="__main__":
                                    {"Original LC": MM.Y_valid,
                                     "Wedge-Removed LC": MM.X_valid, 
                                     "Predicted LC": MM.preds}, 
-                                   astro_params = {
-                                       "L_X": UM.valid_metadata["astro_params"]["L_X"],
-                                       "NU_X_THRESH":UM.valid_metadata["astro_params"]["NU_X_THRESH"],
-                                       "ION_Tvir_MIN": UM.valid_metadata["astro_params"]["ION_Tvir_MIN"]},
                                    num_samples=10)
 
             SM = StatsManager(MM.binary_true, MM.binary_preds)
@@ -166,7 +158,7 @@ if __name__=="__main__":
 
             UM.save_results(filename,
                             {"predicted_lightcones": MM.preds},
-                            start=MM.X_valid.shape[0],
-                            end=MM.X_valid.shape[0]+MM.preds.shape[0])
+                            start=MM.X_train.shape[0],
+                            end=MM.X_train.shape[0]+MM.preds.shape[0])
             logger.info("Done")
         
