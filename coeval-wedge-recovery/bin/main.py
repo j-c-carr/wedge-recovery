@@ -102,7 +102,9 @@ if __name__=="__main__":
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
     UM.load_data_from_h5(args.data_file)
-    exit()
+    X = UM.data["brightness_temp_boxes"]
+    Y = UM.data["wedge_filtered_brightness_temp_boxes"]
+    redshifts = UM.data["redshifts"]
 
     # Binarize ground truth, passed as labels to the model.
     B = (Y > 0).astype(np.float32)

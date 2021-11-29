@@ -30,6 +30,8 @@ class UtilManager:
 
 
     def __init__(self):
+        self.data = {}
+        self.metadata = {}
         self.dset_attrs = {}
 
 
