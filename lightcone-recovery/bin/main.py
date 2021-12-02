@@ -51,6 +51,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--save_coeval", action="store_true", help="store results in h5 file")
     parser.add_argument("--old_model_loc", help="filename of pretrained weights")
     parser.add_argument("--sample_data_only", action="store_true", help="plot data sample and then exit")
+    parser.add_argument("--results_dir", help="folder to store results")
     return parser.parse_args()
 
 
@@ -91,9 +92,12 @@ if __name__=="__main__":
     np.random.seed(0)
     tf.random.set_seed(0)
 
+    UM = UtilManager()
+    LPM = LightconePlotManager(redshifts, LIGHTCONE_SHAPE,
+                               LIGHTCONE_DIMENSIONS)
+
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
-    UM = UtilManager()
     UM.load_data_from_h5(args.data_file)
 
     X = UM.data["wedge_filtered_lightcones"]
@@ -102,9 +106,6 @@ if __name__=="__main__":
     B = UM.binarize_ground_truth(Y)
 
     logger.info("Done.")
-    exit()
-    LPM = LightconePlotManager(redshifts, LIGHTCONE_SHAPE,
-                               LIGHTCONE_DIMENSIONS)
 
     if args.sample_data_only:
         LPM.compare_lightcones(f"{FIG_DIR}/data", 
@@ -153,7 +154,14 @@ if __name__=="__main__":
             logging.debug("Done.")
  
         if args.save_lightcones:
-            filename = f"scratch/results/{args.title}_validation.h5"
+
+            assert args.predict is True, \
+                    "No predictions to save. Please specify --predict."
+
+            assert args.results_dir is not None, \
+                    "Please specify the --results_dir."
+
+            filename = f"{args.results_dir}/{args.title}_validation.h5"
             logger.info(f"Saving predictions to {filename}")
 
             UM.save_results(filename,

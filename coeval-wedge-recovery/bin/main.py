@@ -15,7 +15,6 @@ import numpy as np
 import tensorflow as tf
 
 import matplotlib.pyplot as plt
-from isensee2017 import *
 from util_manager import UtilManager
 from model_manager import ModelManager
 from stats_manager import StatsManager 
@@ -56,6 +55,7 @@ def make_parser() -> argparse.ArgumentParser:
                         help="store results in h5 file")
     parser.add_argument("--old_model_loc", help="filename of pretrained weights")
     parser.add_argument("--sample_data_only", action="store_true", help="plot data sample and then exit")
+    parser.add_argument("--results_dir", help="name of folder to store validation results")
     return parser.parse_args()
 
 
@@ -98,6 +98,7 @@ if __name__=="__main__":
     tf.random.set_seed(0)
 
     UM = UtilManager()
+    CPM = CoevalPlotManager(CUBE_SHAPE, CUBE_DIMENSIONS)
 
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
@@ -111,10 +112,9 @@ if __name__=="__main__":
 
     logger.info("Done.")
 
-    CPM = CoevalPlotManager(CUBE_SHAPE, CUBE_DIMENSIONS)
 
     MM = ModelManager(X, B, f"{args.datetime}_{args.title}", args.log_dir,
-            model_params, CUBE_SHAPE)
+                      model_params, CUBE_SHAPE)
 
     if args.sample_data_only:
 
@@ -150,11 +150,11 @@ if __name__=="__main__":
             means = MM.preds.mean(axis=(2,3), keepdims=True)
 
             CPM.compare_coeval_boxes(f"{FIG_DIR}/predictions", 
-                                    {"Original Box": Y[MM.X_train.shape[0]:],
-                                     "Wedge-removed Box": X[MM.X_train.shape[0]:], 
-                                     "Binarized Box": B[MM.X_train.shape[0]:],
-                                     "Predicted Box": MM.preds}, 
-                                   num_samples=10)
+                                     {"Original Box": Y[MM.X_train.shape[0]:],
+                                      "Wedge-removed Box": X[MM.X_train.shape[0]:], 
+                                      "Binarized Box": B[MM.X_train.shape[0]:],
+                                      "Predicted Box": MM.preds}, 
+                                      num_samples=10)
  
             SM = StatsManager(MM.binary_true, MM.binary_preds)
             SM.analyze_predictions()
@@ -164,7 +164,13 @@ if __name__=="__main__":
 
         # Assumes that data has NOT been shuffled during training
         if args.save_validation_results:
-            filename = f"scratch/results/{args.title}_results.h5"
+            assert args.predict is True, \
+                    "Predictions not generated."
+
+            assert args.results_dir is not None, \
+                    "Must supply a --results_dir to store the dataset to."
+
+            filename = f"{args.results_dir}/{args.title}_results.h5"
             UM.save_data_to_h5(filename,
                        {"wedge_filtered_brightness_temp_boxes": X[MM.X_train.shape[0]:],
                         "brightness_temp_boxes": Y[MM.X_train.shape[0]:],
@@ -172,14 +178,4 @@ if __name__=="__main__":
                         "redshifts": redshifts[MM.X_train.shape[0]:]},
                         stats=SM.results)
 
-            logger.info("Done")
-
-
-            filename = f"scratch/results/{args.title}_validation.h5"
-            logger.info(f"Saving predictions to {filename}")
-
-            UM.save_results(filename,
-                            {"predicted_lightcones": MM.preds},
-                            start=MM.X_train.shape[0],
-                            end=MM.X_train.shape[0]+MM.preds.shape[0])
             logger.info("Done")
