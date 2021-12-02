@@ -42,4 +42,4 @@ python3 $PROJECTDIR/bin/main.py \
         $PROJECTDIR/in/model_config.yml \
         scratch/datasets/z7-9_HII-DIM-128_BOX_LEN-256_full_gillet_v1.h5 \
         --old_model_loc scratch/model-checkpoints/2021-11-25-2343_z7-9_HII-DIM-128_BOX-LEN-256_full_gillet_192-boxes-checkpoint.h5 \
-        --predict --save_lightcones --results_dir scratch/results
+        --predict --save_results --results_dir scratch/results

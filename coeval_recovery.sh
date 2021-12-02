@@ -38,4 +38,4 @@ time python3 $PROJECTDIR/bin/main.py \
         scratch/datasets/z8.5-10_HII-DIM-128_BOX_LEN-128_lite_xh_boxes.h5 \
         --predict \
         --old_model_loc scratch/model-checkpoints/2021-11-08-1108_z8.5-10_HII-DIM-128_BOX-LEN-128_dice_bintru-checkpoint.h5 \
-        --save_validation_results --results_dir scratch/results
+        --save_results --results_dir scratch/results

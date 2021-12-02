@@ -47,7 +47,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("--predict", action="store_true", help="make predictions")
     parser.add_argument("--predict_coeval", action="store_true", 
                         help="make predictions on coeval boxes")
-    parser.add_argument("--save_lightcones", action="store_true", help="store results in h5 file")
+    parser.add_argument("--save_results", action="store_true", help="store results in h5 file")
     parser.add_argument("--save_coeval", action="store_true", help="store results in h5 file")
     parser.add_argument("--old_model_loc", help="filename of pretrained weights")
     parser.add_argument("--sample_data_only", action="store_true", help="plot data sample and then exit")
@@ -158,7 +158,7 @@ if __name__=="__main__":
             UM.write_str(str(SM.results), f"{OUT_DIR}/stats.txt")
             logging.debug("Done.")
  
-        if args.save_lightcones:
+        if args.save_results:
 
             assert args.predict is True, \
                     "No predictions to save. Please specify --predict."

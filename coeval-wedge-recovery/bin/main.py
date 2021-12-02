@@ -50,7 +50,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser.add_argument("data_file", help="name of data file (hdf5 format)")
     parser.add_argument("--train", action="store_true", help="train model")
     parser.add_argument("--predict", action="store_true", help="make predictions")
-    parser.add_argument("--save_validation_results", action="store_true", 
+    parser.add_argument("--save_results", action="store_true", 
                         help="store results in h5 file")
     parser.add_argument("--old_model_loc", help="filename of pretrained weights")
     parser.add_argument("--sample_data_only", action="store_true", help="plot data sample and then exit")
@@ -166,7 +166,7 @@ if __name__=="__main__":
 
 
         # Assumes that data has NOT been shuffled during training
-        if args.save_validation_results:
+        if args.save_results:
             assert args.predict is True, \
                     "Predictions not generated."
 
