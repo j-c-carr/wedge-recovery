@@ -18,11 +18,11 @@ from tensorflow.keras.models import Model
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras import Input
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler, TensorBoard
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau, LearningRateScheduler
 from tensorflow.keras.optimizers import Adam
 
 from isensee2017 import isensee2017_model
-from loss_functions import dice_coefficient_loss
+
 
 def init_logger(f, name):
     """Instantiates logger :name: and sets logfile to :f:"""
@@ -37,6 +37,7 @@ def init_logger(f, name):
 
 LOGGER = init_logger("test.log", __name__)
 
+
 class ModelManager():
     """Manager class for creating, compiling, training, the model"""
 
@@ -44,7 +45,6 @@ class ModelManager():
                  X: np.ndarray,
                  Y: np.ndarray,
                  ID: str,
-                 LOG_DIR: str,
                  params: dict,
                  CUBE_SHAPE: tuple) -> None:
         """
@@ -52,7 +52,6 @@ class ModelManager():
         :X: training samples
         :Y: labels of training samples
         :ID: model label with format: <name>_datetime 
-        :LOG_DIR: directory for Tensorboard logs
         :params: dictionary for model params, loaded from yml file
         :CUBE_SHAPE: shape of a single training sample
         """
@@ -74,16 +73,11 @@ class ModelManager():
             Xstd = self.X.std(axis=(2, 3), keepdims=True)
             self.X = (self.X - Xmu) / Xstd
 
-            #Ymu = self.Y.mean(axis=(2, 3), keepdims=True)
-            #Ystd = self.Y.std(axis=(2, 3), keepdims=True)
-            #self.Y = (self.Y - Ymu) / Ystd
-
 
         self.ID = ID
-        self.LOG_DIR = LOG_DIR
         self.CUBE_SHAPE = CUBE_SHAPE
 
-        self.MODEL_LOC = f"scratch/model-checkpoints/{self.ID}-checkpoint.h5"
+        self.MODEL_LOC = f"{self.MODEL_CHECKPOINT_DIR}/{self.ID}-checkpoint.h5"
 
         
         schedule = lambda epoch, lr: 5e-4 * (self.LRF ** epoch)
@@ -94,11 +88,6 @@ class ModelManager():
                                           verbose=1,
                                           save_best_only=True,
                                           save_weights_only=True)]
-                          # TensorBoard(log_dir=LOG_DIR, 
-                          #             histogram_freq=1,
-                          #             update_freq='epoch',
-                          #             write_graph=True,
-                          #             profile_batch="2,6")]
 
         self.X_train, self.X_valid, self.Y_train, self.Y_valid = \
         train_test_split(self.X, self.Y, test_size=params["test_size"],

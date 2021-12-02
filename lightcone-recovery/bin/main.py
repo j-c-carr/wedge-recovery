@@ -32,6 +32,7 @@ def init_logger(f: str,
     logger.addHandler(file_handler)
     return logger
 
+
 def make_parser() -> argparse.ArgumentParser:
     """Makes command line argument parser. Returns ArgumentParser"""
 
@@ -39,8 +40,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("title", help="name of the model")
     parser.add_argument("datetime", help="datetime of exectution")
-    parser.add_argument("root_dir", help="name project root directory")
-    parser.add_argument("log_dir", help="name of the log directory")
+    parser.add_argument("fig_dir", help="name of directory for saving figures")
     parser.add_argument("config_file", help="name of the model config (yaml format) file")
     parser.add_argument("data_file", help="name of data file (hdf5 format)")
     parser.add_argument("--train", action="store_true", help="train model")
@@ -65,7 +65,7 @@ def read_params_from_yml_file(filename: str) -> dict:
 
 
 def make_out_dir():
-    OUT_DIR = args.root_dir + "/out/" + args.datetime + args.title + "/"
+    OUT_DIR = args.fig_dir  + args.datetime + args.title + "/"
     FIG_DIR = OUT_DIR + "figures/"
     try:
         os.mkdir(OUT_DIR)
@@ -93,8 +93,6 @@ if __name__=="__main__":
     tf.random.set_seed(0)
 
     UM = UtilManager()
-    LPM = LightconePlotManager(redshifts, LIGHTCONE_SHAPE,
-                               LIGHTCONE_DIMENSIONS)
 
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
@@ -107,6 +105,9 @@ if __name__=="__main__":
 
     logger.info("Done.")
 
+    LPM = LightconePlotManager(redshifts, LIGHTCONE_SHAPE,
+                               LIGHTCONE_DIMENSIONS)
+
     if args.sample_data_only:
         LPM.compare_lightcones(f"{FIG_DIR}/data", 
                                {"Binarized LC": B, 
@@ -116,14 +117,12 @@ if __name__=="__main__":
         exit()
 
 
-    MM = ModelManager(X, B, f"{args.datetime}_{args.title}", args.log_dir,
-            model_params, LIGHTCONE_SHAPE)
+    MM = ModelManager(X, B, f"{args.datetime}_{args.title}", model_params, LIGHTCONE_SHAPE)
 
     # Loads multiple GPUs if available
     strategy = tf.distribute.experimental.CentralStorageStrategy()
     logger.debug("Number of devices: {}".format(
-            strategy.num_replicas_in_sync
-        ))
+                 strategy.num_replicas_in_sync))
 
     with strategy.scope():
 
@@ -139,8 +138,14 @@ if __name__=="__main__":
  
         if args.predict:
             logging.debug(f"Making predictions...")
-                
-            MM.predict_on(MM.X_valid, MM.Y_valid)
+
+            # Don't save the boxes that the model was trained on
+            if args.train is True:
+                MM.predict_on(MM.X_valid, MM.Y_valid)
+                start=MM.X_train.shape[0]
+            else:
+                MM.predict_on(MM.X, MM.Y)
+                start=0
 
             LPM.compare_lightcones(f"{FIG_DIR}/predictions", 
                                    {"Original LC": MM.Y_valid,
@@ -166,7 +171,7 @@ if __name__=="__main__":
 
             UM.save_results(filename,
                             {"predicted_lightcones": MM.preds},
-                            start=MM.X_train.shape[0],
-                            end=MM.X_train.shape[0]+MM.preds.shape[0])
+                            start=start,
+                            end=MM.X.shape[0])
             logger.info("Done")
         

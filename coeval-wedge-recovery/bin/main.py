@@ -45,8 +45,7 @@ def make_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument("title", help="name of the model")
     parser.add_argument("datetime", help="datetime of exectution")
-    parser.add_argument("root_dir", help="name project root directory")
-    parser.add_argument("log_dir", help="name of the log directory")
+    parser.add_argument("fig_dir", help="name project fig directory")
     parser.add_argument("config_file", help="name of the model config (yaml format) file")
     parser.add_argument("data_file", help="name of data file (hdf5 format)")
     parser.add_argument("--train", action="store_true", help="train model")
@@ -69,7 +68,7 @@ def read_params_from_yml_file(filename: str) -> dict:
 
 
 def make_out_dir():
-    OUT_DIR = args.root_dir + "/out/" + args.datetime + args.title + "/"
+    OUT_DIR = args.fig_dir + "/out/" + args.datetime + args.title + "/"
     FIG_DIR = OUT_DIR + "figures/"
     try:
         os.mkdir(OUT_DIR)
@@ -103,8 +102,8 @@ if __name__=="__main__":
     # Load data
     logger.info(f"Loading data from {args.data_file}...")
     UM.load_data_from_h5(args.data_file)
-    X = UM.data["brightness_temp_boxes"]
-    Y = UM.data["wedge_filtered_brightness_temp_boxes"]
+    Y = UM.data["brightness_temp_boxes"]
+    X = UM.data["wedge_filtered_brightness_temp_boxes"]
     redshifts = UM.data["redshifts"]
 
     # Binarize ground truth, passed as labels to the model.
@@ -113,8 +112,8 @@ if __name__=="__main__":
     logger.info("Done.")
 
 
-    MM = ModelManager(X, B, f"{args.datetime}_{args.title}", args.log_dir,
-                      model_params, CUBE_SHAPE)
+    MM = ModelManager(X, B, f"{args.datetime}_{args.title}",  model_params, 
+                      CUBE_SHAPE)
 
     if args.sample_data_only:
 
@@ -128,8 +127,7 @@ if __name__=="__main__":
     # Loads multiple GPUs if available
     strategy = tf.distribute.experimental.CentralStorageStrategy()
     logger.debug("Number of devices: {}".format(
-            strategy.num_replicas_in_sync
-        ))
+                 strategy.num_replicas_in_sync))
 
     with strategy.scope():
 
@@ -146,13 +144,18 @@ if __name__=="__main__":
         if args.predict:
             logging.debug(f"Making predictions...")
                 
-            MM.predict_on(MM.X_valid, MM.Y_valid)
-            means = MM.preds.mean(axis=(2,3), keepdims=True)
+            # If the model was trained, save validation results only
+            if args.train is True:
+                MM.predict_on(MM.X_valid, MM.Y_valid)
+                start=MM.X_train.shape[0]
+            else:
+                MM.predict_on(MM.X, MM.Y)
+                start=0
 
             CPM.compare_coeval_boxes(f"{FIG_DIR}/predictions", 
-                                     {"Original Box": Y[MM.X_train.shape[0]:],
-                                      "Wedge-removed Box": X[MM.X_train.shape[0]:], 
-                                      "Binarized Box": B[MM.X_train.shape[0]:],
+                                     {"Original Box": Y[start:],
+                                      "Wedge-removed Box": X[start:], 
+                                      "Binarized Box": B[start:],
                                       "Predicted Box": MM.preds}, 
                                       num_samples=10)
  
@@ -171,11 +174,8 @@ if __name__=="__main__":
                     "Must supply a --results_dir to store the dataset to."
 
             filename = f"{args.results_dir}/{args.title}_results.h5"
-            UM.save_data_to_h5(filename,
-                       {"wedge_filtered_brightness_temp_boxes": X[MM.X_train.shape[0]:],
-                        "brightness_temp_boxes": Y[MM.X_train.shape[0]:],
-                        "predicted_brightness_temp_boxes": MM.preds,
-                        "redshifts": redshifts[MM.X_train.shape[0]:]},
-                        stats=SM.results)
+            UM.save_results(filename,
+                            {"predicted_brightness_temp_boxes": MM.preds},
+                            start=start, end=X.shape[0])
 
             logger.info("Done")

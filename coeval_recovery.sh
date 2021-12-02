@@ -17,14 +17,10 @@ module load cuda/11.0 cudnn
 # For tensorboard profiler
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/extras/CUPTI/lib64/
 
+PROJECTDIR=/home/jccarr/wedge-recovery/coeval-wedge-recovery
 
-#######################################################################
-#              Start of non-compute canada related suff               #
-#######################################################################
 
-PROJECTDIR=/home/jccarr/wedge-recovery/lightcone-recovery
-
-TITLE="z7-9_test"
+TITLE="z8.5-10_test_2"
 printf "\n\n-----\t Start of $title\t-----\n" >> test.log
 
 # Prepare log directory
@@ -33,13 +29,13 @@ datetime=$(date '+%Y-%m-%d-%H%M')
 # Prepare virtualenv
 source /home/jccarr/projects/def-acliu/jccarr/.env/bin/activate
 
-
 # title datetime root_dir log_dir config_file data_file 
-python3 $PROJECTDIR/bin/main.py \
+time python3 $PROJECTDIR/bin/main.py \
         $TITLE \
         $datetime \
         $PROJECTDIR/out \
         $PROJECTDIR/in/model_config.yml \
-        scratch/datasets/z7-9_HII-DIM-128_BOX_LEN-256_full_gillet_v1.h5 \
-        --old_model_loc scratch/model-checkpoints/2021-11-25-2343_z7-9_HII-DIM-128_BOX-LEN-256_full_gillet_192-boxes-checkpoint.h5 \
-        --predict --save_lightcones --results_dir scratch/results
+        scratch/datasets/z8.5-10_HII-DIM-128_BOX_LEN-128_lite_xh_boxes.h5 \
+        --predict \
+        --old_model_loc scratch/model-checkpoints/2021-11-08-1108_z8.5-10_HII-DIM-128_BOX-LEN-128_dice_bintru-checkpoint.h5 \
+        --save_validation_results --results_dir scratch/results

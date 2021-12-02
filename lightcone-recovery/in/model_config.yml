@@ -1,4 +1,7 @@
 ---
+###############################################################################
+#                   MUST keep all parameter names the same                    #
+###############################################################################
 model_params:
   lrf: 0.985
   batch_size: 1
@@ -9,5 +12,6 @@ model_params:
   shuffle: False
   standardize: True
   verbose: 1
+  model_checkpoint_dir: "scratch/model-checkpoints"
 lightcone_shape: !!python/tuple [256, 128, 128]
 lightcone_dimensions: !!python/tuple [512, 256, 256]

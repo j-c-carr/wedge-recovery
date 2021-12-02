@@ -44,7 +44,6 @@ class ModelManager():
                  X: np.ndarray,
                  Y: np.ndarray,
                  ID: str,
-                 LOG_DIR: str,
                  params: dict,
                  INPUT_SHAPE: tuple) -> None:
         """
@@ -52,7 +51,6 @@ class ModelManager():
         :X: training samples
         :Y: labels of training samples
         :ID: model label with format: <name>_datetime 
-        :LOG_DIR: directory for Tensorboard logs
         :params: dictionary for model params, loaded from yml file
         :INPUT_SHAPE: shape of a single training sample
         """
@@ -75,7 +73,6 @@ class ModelManager():
             self.X = (self.X - Xmu) / Xstd
 
         self.ID = ID
-        self.LOG_DIR = LOG_DIR
         self.INPUT_SHAPE = INPUT_SHAPE
 
         self.MODEL_LOC = f"scratch/model-checkpoints/{self.ID}-checkpoint.h5"
@@ -89,11 +86,6 @@ class ModelManager():
                                           verbose=1,
                                           save_best_only=True,
                                           save_weights_only=True)]
-                          # TensorBoard(log_dir=LOG_DIR, 
-                          #             histogram_freq=1,
-                          #             update_freq='epoch',
-                          #             write_graph=True,
-                          #             profile_batch="2,6")]
 
         self.X_train, self.X_valid, self.Y_train, self.Y_valid = \
         train_test_split(self.X, self.Y, test_size=params["test_size"],
