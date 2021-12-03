@@ -1,7 +1,8 @@
-# wedge-recovery
+# 21cm Wedge Recovery
 Python code for recovering foreground modes lost to 21cm foregrounds using U-Net.
 
-### Quick Start
+## Dependencies
+
 Requirements
 * `python3.6+`
 * `numpy`
@@ -11,4 +12,21 @@ Requirements
 * `yaml`
 * `h5py`
 * `tqdm`
-For information about how to run the dataset generators, run
+
+Alternatively, you can create a python virtual environment from the `requirements.txt` file. To do that, first create a new virtual envionrment,
+```
+python3 -m venv /path/to/new/virtual/env
+source /path/to/new/virtual/env/bin/activate
+
+```
+Then, install all the relevent packages
+```
+pip install -r /path/to/requirements.txt
+```
+
+## Getting Started
+To download the repository, 
+```
+https://github.com/j-c-carr/wedge-recovery.git
+cd wedge-recovery
+```
