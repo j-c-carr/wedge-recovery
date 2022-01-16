@@ -1,15 +1,13 @@
-import re
-import sys
+"""
+@author: j-c-carr
+
+Manager class for I/O operations
+"""
+
 import h5py
 import logging
-
-import os
-import typing
-from typing import Optional, List
 import numpy as np
-import tensorflow as tf
-from skimage.transform import resize
-from sklearn.preprocessing import normalize
+
 
 def init_logger(f: str, 
                 name: str) -> logging.Logger:
@@ -23,7 +21,9 @@ def init_logger(f: str,
     logger.addHandler(file_handler)
     return logger
 
+
 logger = init_logger("test.log", __name__)
+
 
 class UtilManager:
     """Manager class for miscellaneous I/O operations"""
@@ -33,9 +33,9 @@ class UtilManager:
         self.random_seeds = {}
         self.data = {}
         self.metadata = {}
+        self.filepath = ""
 
-
-    def load_data_from_h5(self, filepath):
+    def load_data_from_h5(self, filepath: str):
         """Loads all data from h5 file, returns nothing. (Typically used just
         to observe the values in a dataset)"""
         self.filepath = filepath
@@ -56,7 +56,7 @@ class UtilManager:
                 # Lightcones are stored as h5py datasets
                 if isinstance(hf[k], h5py.Dataset):
                     v = np.array(hf[k][:], dtype=np.float32)
-                    assert np.isnan(np.sum(v)) == False
+                    assert np.isnan(np.sum(v)) is False
                     self.data[k] = v
             self.data["redshifts"].reshape(-1) 
 
@@ -64,7 +64,7 @@ class UtilManager:
             for k, v in hf.attrs.items():
                 self.dset_attrs[k] = v
 
-        # Print success message
+        # Success message
         print("\n----------\n")
         print(f"data loaded from {self.filepath}")
         print("Contents:")
@@ -79,8 +79,7 @@ class UtilManager:
             print(f"\t{k}")
         print("\n----------\n")
 
-
-    def save_results(self, 
+    def save_results(self,
                      filename: str, 
                      results: dict,
                      start: int,
@@ -110,7 +109,7 @@ class UtilManager:
 
             # Save the data that was used to generate the results
             for dset_name, _data in self.data.items():
-                assert 0<= start and end <= _data.shape[0], \
+                assert 0 <= start and end <= _data.shape[0], \
                         f"end-start must match _data shape"
 
                 logger.info(f"Saving {dset_name} as a dataset.")
@@ -122,7 +121,7 @@ class UtilManager:
                 logger.info(f"Saving {grp_name} as a group.")
 
                 for dset_name, _data in grp_data.items():
-                    assert 0<= start and end <= _data.shape[0], \
+                    assert 0 <= start and end <= _data.shape[0], \
                             f"error: end-start must match _data shape"
                     logger.info(f"\tSaving {dset_name} values.")
                     grp.create_dataset(dset_name, data=_data[start:end])
@@ -132,19 +131,18 @@ class UtilManager:
                 logger.info(f"Saving {k} attribute.")
                 hf.attrs[k] = str(v)
 
-
-    def binarize_ground_truth(self, Y: np.ndarray) -> np.ndarray:
-        mins = Y.min(axis=(2,3), keepdims=True)
+    def binarize_ground_truth(self,
+                              Y: np.ndarray) -> np.ndarray:
+        mins = Y.min(axis=(2, 3), keepdims=True)
         return (Y-mins > 0).astype(np.float32)
 
-
-    def write_str(self, 
+    def write_str(self,
                   s: str, 
                   filename: str) -> None:
         """Writes string to file"""
         assert type(s) is str
 
-        with open(filename,"w") as f:
+        with open(filename, "w") as f:
             f.write(s)
             f.close()
 

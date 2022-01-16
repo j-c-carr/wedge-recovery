@@ -1,11 +1,13 @@
-import re
+"""
+@author: j-c-carr
+
+Manager class for miscellaneous I/O operations
+"""
+
 import h5py
 import logging
 import pprint
-
-import os
-import typing
-from typing import Optional, List
+from typing import Optional, Tuple, Any
 import numpy as np
 
 
@@ -21,27 +23,26 @@ def init_logger(f: str,
     logger.addHandler(file_handler)
     return logger
 
+
 logger = init_logger("test.log", __name__)
 
 
 class UtilManager:
-
     """Manager class for miscellaneous I/O operations"""
-
 
     def __init__(self):
         self.data = {}
         self.metadata = {}
         self.dset_attrs = {}
+        self.filepath = ""
 
-
-    def load_data_from_h5(self, filepath):
+    def load_data_from_h5(self, filepath: str):
         """Loads all data from h5 file, returns nothing. (Typically used just
         to observe the values in a dataset)"""
+
         self.filepath = filepath
 
         with h5py.File(filepath, "r") as hf:
-
             for k in hf.keys():
 
                 # AstroParams are stored in h5py groups
@@ -56,7 +57,7 @@ class UtilManager:
                 # Lightcones are stored as h5py datasets
                 if isinstance(hf[k], h5py.Dataset):
                     v = np.array(hf[k][:], dtype=np.float32)
-                    assert np.isnan(np.sum(v)) == False
+                    assert np.isnan(np.sum(v)) is False
                     self.data[k] = v
             self.data["redshifts"].reshape(-1) 
 
@@ -79,11 +80,10 @@ class UtilManager:
             print(f"\t{k}")
         print("\n----------\n")
 
-
     def shuffle_data(self, 
                      X: np.ndarray, 
                      Y: np.ndarray, 
-                     Z: np.ndarray) -> np.ndarray:
+                     Z: np.ndarray) -> Tuple[Any, Any, Any]:
         """
         Wrapper function to shuffle the data, keeping the indices of the samples
         the same (TODO: there is definitely a better implementation for this...)
@@ -103,8 +103,7 @@ class UtilManager:
 
         return shuffled_X, shuffled_Y, shuffled_Z
 
-
-    def save_results(self, 
+    def save_results(self,
                      filename: str, 
                      results: dict,
                      start: int,
@@ -134,7 +133,7 @@ class UtilManager:
 
             # Save the data that was used to generate the results
             for dset_name, _data in self.data.items():
-                assert 0<= start and end <= _data.shape[0], \
+                assert 0 <= start and end <= _data.shape[0], \
                         f"end-start must match _data shape"
 
                 logger.info(f"Saving {dset_name} as a dataset.")
@@ -146,7 +145,7 @@ class UtilManager:
                 logger.info(f"Saving {grp_name} as a group.")
 
                 for dset_name, _data in grp_data.items():
-                    assert 0<= start and end <= _data.shape[0], \
+                    assert 0 <= start and end <= _data.shape[0], \
                             f"error: end-start must match _data shape"
                     logger.info(f"\tSaving {dset_name} values.")
                     grp.create_dataset(dset_name, data=_data[start:end])
@@ -156,17 +155,17 @@ class UtilManager:
                 logger.info(f"Saving {k} attribute.")
                 hf.attrs[k] = str(v)
 
-
     def save_data_to_h5(self, 
-                         filename: str, 
-                         results: dict,
-                         stats: Optional[str] = None) -> None:
+                        filename: str,
+                        results: dict,
+                        stats: Optional[str] = None) -> None:
         """
         Saves the model predictions (along with input and labels) to an h5 file
-        -----
+        ----------
         Params:
-        :filename: filename of output file
-        :results: key is dataset name, value is np.ndarray data
+        :filename: Filename of output file
+        :results:  Keys are dataset names, values are np.ndarray data
+        :stats:    Optional stats, saved as an h5py attribute
         """
         with h5py.File(filename, "w") as hf:
 
@@ -183,7 +182,7 @@ class UtilManager:
             if hasattr(self, "xH_boxes"):
                 hf.create_dataset("ionized_boxes", data=self.xH_boxes)
 
-        # Print success message
+        # Success message
         logger.info("\n----------\n")
         logger.info(f"Validation results saved to {filename}")
         logger.info("Contents:")
@@ -196,13 +195,12 @@ class UtilManager:
             logger.info("{}".format(pprint.pformat(stats)))
         logger.info("\n----------\n")
 
-
-    def write_str(self, 
-                  s: str, 
+    @staticmethod
+    def write_str(s: str,
                   filename: str) -> None:
         """Writes string to file"""
         assert type(s) is str
 
-        with open(filename,"w") as f:
+        with open(filename, "w") as f:
             f.write(s)
             f.close()

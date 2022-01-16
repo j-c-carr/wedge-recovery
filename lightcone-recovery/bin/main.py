@@ -1,11 +1,11 @@
 """
-Author: Jonathan Colaco Carr  (jonathan.colacocarr@mail.mcgill.ca)
+@author: j-c-carr
+
 Main script for recovering wedge modes using U-Net.
 """
-import sys
+
 import os
 import yaml
-import typing
 import logging
 import argparse
 import numpy as np
@@ -19,6 +19,7 @@ from lightcone_plot_manager import LightconePlotManager
 
 # Prints all logging info to std.err
 logging.getLogger().addHandler(logging.StreamHandler())
+
 
 def init_logger(f: str, 
                 name: str) -> logging.Logger:
@@ -76,7 +77,7 @@ def make_out_dir():
     return OUT_DIR, FIG_DIR
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     # Define constants and hyper-parameters
     args = make_parser()
@@ -116,8 +117,7 @@ if __name__=="__main__":
                                num_samples=10)
         exit()
 
-
-    MM = ModelManager(X, B, f"{args.datetime}_{args.title}", model_params, LIGHTCONE_SHAPE)
+    MM = ModelManager(X, B, f"{args.datetime}_{args.title}", model_params, LIGHTCONE_SHAPE, args.train)
 
     # Loads multiple GPUs if available
     strategy = tf.distribute.experimental.CentralStorageStrategy()
@@ -138,14 +138,7 @@ if __name__=="__main__":
  
         if args.predict:
             logging.debug(f"Making predictions...")
-
-            # Don't save the boxes that the model was trained on
-            if args.train is True:
-                MM.predict_on(MM.X_valid, MM.Y_valid)
-                start=MM.X_train.shape[0]
-            else:
-                MM.predict_on(MM.X, MM.Y)
-                start=0
+            MM.predict_on(MM.X_valid, MM.Y_valid)
 
             LPM.compare_lightcones(f"{FIG_DIR}/predictions", 
                                    {"Original LC": MM.Y_valid,
@@ -164,14 +157,18 @@ if __name__=="__main__":
                     "No predictions to save. Please specify --predict."
 
             assert args.results_dir is not None, \
-                    "Please specify the --results_dir."
+                   "Please specify the --results_dir."
 
             filename = f"{args.results_dir}/{args.title}_validation.h5"
             logger.info(f"Saving predictions to {filename}")
+
+            # Don't save the samples that the model was trained on
+            start = MM.X_train.shape[0] if args.train is True else 0
 
             UM.save_results(filename,
                             {"predicted_lightcones": MM.preds},
                             start=start,
                             end=MM.X.shape[0])
+
             logger.info("Done")
         

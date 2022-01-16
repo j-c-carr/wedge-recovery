@@ -1,20 +1,16 @@
 """
-Author: Jonathan Colaco Carr  (jonathan.colacocarr@mail.mcgill.ca)
+@author: j-c-carr
 
 Main script for recovering wedge modes using U-Net on coeval boxes.
 """
 
-import sys
 import os
 import yaml
-import h5py
-import typing
 import logging
 import argparse
 import numpy as np
 import tensorflow as tf
 
-import matplotlib.pyplot as plt
 from util_manager import UtilManager
 from model_manager import ModelManager
 from stats_manager import StatsManager 
@@ -79,8 +75,7 @@ def make_out_dir():
     return OUT_DIR, FIG_DIR
 
 
-if __name__=="__main__":
-
+if __name__ == "__main__":
 
     # Define constants and hyper-parameters
     args = make_parser()
@@ -111,7 +106,6 @@ if __name__=="__main__":
 
     logger.info("Done.")
 
-
     MM = ModelManager(X, B, f"{args.datetime}_{args.title}",  model_params, 
                       CUBE_SHAPE)
 
@@ -136,8 +130,7 @@ if __name__=="__main__":
             MM.initialize_model(load_saved_weights=True, old_model=args.old_model_loc)
         else:
             MM.initialize_model()
- 
- 
+
         if args.train:
             MM.keras_train(strategy.num_replicas_in_sync)
  
@@ -147,23 +140,22 @@ if __name__=="__main__":
             # If the model was trained, save validation results only
             if args.train is True:
                 MM.predict_on(MM.X_valid, MM.Y_valid)
-                start=MM.X_train.shape[0]
+                start = MM.X_train.shape[0]
             else:
                 MM.predict_on(MM.X, MM.Y)
-                start=0
+                start = 0
 
             CPM.compare_coeval_boxes(f"{FIG_DIR}/predictions", 
                                      {"Original Box": Y[start:],
                                       "Wedge-removed Box": X[start:], 
                                       "Binarized Box": B[start:],
                                       "Predicted Box": MM.preds}, 
-                                      num_samples=10)
+                                     num_samples=10)
  
             SM = StatsManager(MM.binary_true, MM.binary_preds)
             SM.analyze_predictions()
             UM.write_str(str(SM.results), f"{OUT_DIR}/stats.txt")
             logging.debug("Done.")
-
 
         # Assumes that data has NOT been shuffled during training
         if args.save_results:
@@ -171,7 +163,7 @@ if __name__=="__main__":
                     "Predictions not generated."
 
             assert args.results_dir is not None, \
-                    "Must supply a --results_dir to store the dataset to."
+                   "Must supply a --results_dir to store the dataset to."
 
             filename = f"{args.results_dir}/{args.title}_results.h5"
             UM.save_results(filename,

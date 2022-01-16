@@ -1,24 +1,19 @@
 """
-Author: Sam Gagnon-Hartman, modified by Jonathan Colaco Carr 
-                                        (jonathan.colacocarr@mail.mcgill.ca)
+Author: Sam Gagnon-Hartman
 
 Python script to build the U-Net architecture proposed in Isensee et al. 2017
 """
 
 import logging
-import typing
-from typing import Optional, List, Any
+from typing import Optional, Any
 import tensorflow as tf
-import tensorflow.keras.backend as K
 from functools import partial
 
 from tensorflow import pad
-from tensorflow.keras import Input, Model
-from tensorflow.keras.initializers import HeNormal
+from tensorflow.keras import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow_addons.layers import InstanceNormalization
-from tensorflow.keras.losses import binary_crossentropy
-from tensorflow.keras.layers import (Layer, 
+from tensorflow.keras.layers import (Layer,
                                      LeakyReLU,
                                      Add,
                                      UpSampling3D,
@@ -27,9 +22,8 @@ from tensorflow.keras.layers import (Layer,
                                      Conv3D,
                                      BatchNormalization,
                                      Concatenate)
-
-
-from loss_functions import (dice_coefficient_loss, 
+from tensorflow.keras.losses import binary_crossentropy
+from loss_functions import (dice_coefficient_loss,
                             TverskyLoss,
                             FocalTverskyLoss,
                             weighted_crossentropy)
@@ -46,9 +40,11 @@ def init_logger(f, name, level=logging.INFO):
     logger.addHandler(file_handler)
     return logger
 
+
 LOGGER = init_logger("test.log", __name__)
 
 KWARGS = {} # {"kernel_initializer": HeNormal()}
+
 
 class ReflectionPadding3D(Layer):
     """
@@ -62,7 +58,7 @@ class ReflectionPadding3D(Layer):
     """
 
     def __init__(self,
-                 padding: tuple =(1, 1, 1),
+                 padding: tuple = (1, 1, 1),
                  **kwargs):
 
         self.padding = tuple(padding)
@@ -71,9 +67,9 @@ class ReflectionPadding3D(Layer):
     def compute_output_shape(self, 
                              input_shape: tuple) -> tuple:
         """Computes shape of output tensor after padding"""
-        return (input_shape[0], \
-                input_shape[1] + 2 * self.padding[0], \
-                input_shape[2] + 2 * self.padding[1], \
+        return (input_shape[0],
+                input_shape[1] + 2 * self.padding[0],
+                input_shape[2] + 2 * self.padding[1],
                 input_shape[3] + 2 * self.padding[2], input_shape[4])
 
     def call(self,
@@ -83,11 +79,11 @@ class ReflectionPadding3D(Layer):
         padding_width, padding_height, padding_depth = self.padding
 
         return pad(input_tensor, 
-                   [[0,0], 
+                   [[0, 0],
                     [padding_height, padding_height], 
                     [padding_width, padding_width],
                     [padding_width, padding_width], 
-                    [0,0]], 
+                    [0, 0]],
                    'REFLECT')
 
 
@@ -177,7 +173,6 @@ def isensee2017_model(inputs,
                       n_labels: Optional[int] = 1,
                       optimizer: Optional[Any] = Adam,
                       initial_learning_rate: Optional[float] = 5e-4,
-                      loss_function: Optional[Any] = dice_coefficient_loss,
                       activation_name: Optional[str] = "sigmoid"):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 competition:

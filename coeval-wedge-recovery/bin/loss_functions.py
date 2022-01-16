@@ -1,7 +1,9 @@
 """
-Author: Jonathan Colaco Carr (jonathan.colacocarr@mail.mcgill.ca)
-Script for defining the loss functions which are used for training. 
+@author: j-c-carr
+
+Script for defining the loss functions which are used for U-Net training.
 """
+
 import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
@@ -14,8 +16,8 @@ def dice_coefficient(y_true, y_pred, threshold):
     Computes the dice coefficient between two tensors
     """
 
-    #y_true = tf.cast(y_true > threshold, dtype=tf.float16)
-    #y_pred = tf.cast(y_pred > threshold, dtype=tf.float16)
+    # y_true = tf.cast(y_true > threshold, dtype=tf.float16)
+    # y_pred = tf.cast(y_pred > threshold, dtype=tf.float16)
 
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
@@ -35,7 +37,7 @@ def weighted_crossentropy(y_true, y_pred, pos_weight=100):
     false positive count decreases. 
     """
     if type(pos_weight) != int:
-        w = np.ones((1, 128, 1, 1), dtype=np.float32) #* 5
+        w = np.ones((1, 128, 1, 1), dtype=np.float32)
         w[:, 128:, :, :] += 15
         pos_weight = tf.convert_to_tensor(w, dtype=np.float32)
 
@@ -46,23 +48,21 @@ class TverskyLoss(Loss):
     """Tvserky loss generalizes the dice coefficient loss by adding weight to
     false positives and false negatives with the help of a coefficient :beta:"""
 
-    
     def __init__(self, beta=0.5):
         super().__init__()
         assert 0 <= beta <= 1.
         self.beta = beta
-
 
     def call(self, y_true, y_pred):
         """
         Computes the Tversky Loss between two tensors as described in Eq. 10 of
         (Jadon, 2020)
         """
-        #flatten label and prediction tensors
+        # Flatten label and prediction tensors
         inputs = K.flatten(y_pred)
         targets = K.flatten(y_true)
 
-        #True Positives, False Positives & False Negatives
+        # True Positives, False Positives & False Negatives
         TP = K.sum((inputs * targets))
         FP = K.sum(((1-targets) * inputs))
         FN = K.sum((targets * (1-inputs)))
@@ -83,11 +83,11 @@ class FocalTverskyLoss(Loss):
         """
         Computes the Focal Tversky Loss between two tensors
         """
-        #flatten label and prediction tensors
+        # Flatten label and prediction tensors
         inputs = K.flatten(y_pred)
         targets = K.flatten(y_true)
 
-        #True Positives, False Positives & False Negatives
+        # True Positives, False Positives & False Negatives
         TP = K.sum((inputs * targets))
         FP = K.sum(((1-targets) * inputs))
         FN = K.sum((targets * (1-inputs)))

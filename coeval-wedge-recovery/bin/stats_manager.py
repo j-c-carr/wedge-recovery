@@ -1,17 +1,24 @@
+"""
+@author: j-c-carr
+"""
+
 import numpy as np
-import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.metrics import Precision, Recall, BinaryAccuracy, MeanIoU 
+from tensorflow.keras.metrics import Precision, Recall, BinaryAccuracy, MeanIoU
 
-class StatsManager():
 
-    """Computes statistics for binary lightcone predictions. """
+class StatsManager:
 
-    def __init__(self, Y_true, Y_pred, _t=0.9):
+    """Computes statistics for binary coeval box predictions. """
+
+    def __init__(self,
+                 Y_true: np.ndarray,
+                 Y_pred: np.ndarray,
+                 threshold=0.9):
         """
         Params:
-        :Y_true: (np.ndarray) list of expected binarized lightcones
-        :Y_pred: (np.ndarray) list of predicted binarized lightcones
+        :Y_true:    List of expected binarized lightcones
+        :Y_pred:    List of predicted binarized lightcones
+        :threshold: Threshold value for tensorflow metrics
         """
 
         assert Y_true.shape == Y_pred.shape
@@ -19,17 +26,15 @@ class StatsManager():
         self.Y_true = 1 - Y_true
         self.Y_pred = 1 - Y_pred 
 
-        self.metrics = {
-                'accuracy': BinaryAccuracy(threshold=_t),
-                'precision': Precision(thresholds=_t),
-                'recall': Recall(thresholds=_t),
-                'meanIoU': MeanIoU(num_classes=2)
-                }
-
-
-    def analyze_predictions(self, idx=None):
-        """Compute the metrics for all of the predictions"""
         self.results = {}
+        self.metrics = {'accuracy': BinaryAccuracy(threshold=threshold),
+                        'precision': Precision(thresholds=threshold),
+                        'recall': Recall(thresholds=threshold),
+                        'meanIoU': MeanIoU(num_classes=2)}
+
+    def analyze_predictions(self):
+        """Compute the metrics for all of the predictions"""
+
         for metric, m in self.metrics.items():
             print(f"Calculating {metric}...")
             for i in range(self.Y_pred.shape[0]):
